@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Foro Aurora: un foro web ligero con temas, respuestas y modo claro/oscuro.">
+  <meta name="theme-color" content="#ffffff">
+  <title>Foro Aurora</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --surface: #f6f8fb;
+      --panel: #ffffff;
+      --panel-strong: #eef3f7;
+      --text: #17202a;
+      --muted: #5d6978;
+      --line: #dfe6ee;
+      --accent: #0f8b8d;
+      --accent-strong: #0b6b6d;
+      --accent-soft: #d9f2f0;
+      --warm: #f5a623;
+      --danger: #c64756;
+      --shadow: 0 18px 38px rgba(22, 35, 53, 0.09);
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #0e1117;
+      --surface: #151a22;
+      --panel: #1d2430;
+      --panel-strong: #252e3c;
+      --text: #f4f7fb;
+      --muted: #a9b5c4;
+      --line: #313b4b;
+      --accent: #54d2c8;
+      --accent-strong: #7ee5dc;
+      --accent-soft: #143d3f;
+      --warm: #ffd166;
+      --danger: #ff7a8a;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      transition: background 180ms ease, color 180ms ease;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(15, 139, 141, 0.12), transparent 34rem),
+        linear-gradient(180deg, var(--surface), var(--bg) 22rem);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: center;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 0.9rem 0;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 0.55rem;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--warm));
+      box-shadow: var(--shadow);
+      color: #fff;
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 0.2rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .theme-toggle {
+      display: inline-grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: 0 8px 18px rgba(17, 24, 39, 0.08);
+      transition: transform 160ms ease, background 160ms ease, border 160ms ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+
+    .theme-toggle svg {
+      width: 22px;
+      height: 22px;
+      display: none;
+    }
+
+    body:not(.dark) .sun-icon,
+    body.dark .moon-icon {
+      display: block;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 300px;
+      gap: 1rem;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 1rem 0 2.5rem;
+    }
+
+    .sidebar,
+    .composer,
+    .post,
+    .trends {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar,
+    .trends {
+      position: sticky;
+      top: 78px;
+      align-self: start;
+      padding: 1rem;
+    }
+
+    .nav-title,
+    .section-title {
+      margin: 0 0 0.8rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .category-list {
+      display: grid;
+      gap: 0.45rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .category-button {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      gap: 0.65rem;
+      align-items: center;
+      width: 100%;
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      padding: 0.45rem 0.5rem;
+    }
+
+    .category-button:hover,
+    .category-button.active {
+      background: var(--accent-soft);
+    }
+
+    .category-icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--panel-strong);
+      color: var(--accent-strong);
+    }
+
+    .category-button span:nth-child(2) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 700;
+      font-size: 0.94rem;
+    }
+
+    .badge {
+      min-width: 28px;
+      border-radius: 999px;
+      background: var(--panel-strong);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 0.18rem 0.44rem;
+    }
+
+    .forum-main {
+      min-width: 0;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px;
+      gap: 0.75rem;
+    }
+
+    .search {
+      position: relative;
+      min-width: 0;
+    }
+
+    .search svg {
+      position: absolute;
+      top: 50%;
+      left: 0.9rem;
+      width: 19px;
+      height: 19px;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search input,
+    .toolbar select,
+    .composer input,
+    .composer textarea,
+    .reply-form input,
+    .reply-form textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      outline: 0;
+      transition: border 160ms ease, box-shadow 160ms ease;
+    }
+
+    .search input {
+      height: 46px;
+      padding: 0 1rem 0 2.75rem;
+    }
+
+    .toolbar select {
+      height: 46px;
+      padding: 0 0.8rem;
+    }
+
+    .search input:focus,
+    .toolbar select:focus,
+    .composer input:focus,
+    .composer textarea:focus,
+    .reply-form input:focus,
+    .reply-form textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .composer {
+      padding: 1rem;
+    }
+
+    .composer-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .composer-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .composer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) 150px;
+      gap: 0.75rem;
+    }
+
+    .composer input,
+    .reply-form input {
+      height: 44px;
+      padding: 0 0.85rem;
+    }
+
+    .composer textarea,
+    .reply-form textarea {
+      min-height: 92px;
+      resize: vertical;
+      margin-top: 0.75rem;
+      padding: 0.8rem 0.85rem;
+      line-height: 1.45;
+    }
+
+    .composer-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      margin-top: 0.8rem;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .primary-button {
+      display: inline-flex;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 800;
+      padding: 0.68rem 1rem;
+    }
+
+    .primary-button:hover {
+      background: var(--accent-strong);
+    }
+
+    .primary-button svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .feed {
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .post {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 0.85rem;
+      padding: 1rem;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 75%, #ffffff), color-mix(in srgb, var(--warm) 80%, #ffffff));
+      color: #ffffff;
+      font-weight: 900;
+      text-transform: uppercase;
+      box-shadow: inset 0 -12px 26px rgba(0, 0, 0, 0.16);
+    }
+
+    .post-body {
+      min-width: 0;
+    }
+
+    .post-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.65rem;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .post-meta strong {
+      color: var(--text);
+    }
+
+    .tag {
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-weight: 800;
+      padding: 0.16rem 0.48rem;
+    }
+
+    .post h3 {
+      margin: 0.45rem 0 0.35rem;
+      font-size: 1.08rem;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+
+    .post p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .post-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.85rem;
+    }
+
+    .icon-button {
+      display: inline-flex;
+      gap: 0.35rem;
+      align-items: center;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 0.83rem;
+      font-weight: 800;
+      padding: 0.38rem 0.65rem;
+    }
+
+    .icon-button:hover,
+    .icon-button.active {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+    }
+
+    .icon-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .replies {
+      display: grid;
+      gap: 0.65rem;
+      margin-top: 0.9rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .reply {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 0.6rem;
+      align-items: start;
+    }
+
+    .reply-avatar {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--panel-strong);
+      color: var(--accent-strong);
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .reply-content {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 0.65rem 0.75rem;
+    }
+
+    .reply-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.6rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .reply-meta strong {
+      color: var(--text);
+    }
+
+    .reply-form {
+      display: grid;
+      gap: 0.65rem;
+      margin-top: 0.9rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .reply-form textarea {
+      min-height: 72px;
+      margin-top: 0;
+    }
+
+    .reply-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.55rem;
+    }
+
+    .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-weight: 800;
+      padding: 0.55rem 0.85rem;
+    }
+
+    .secondary-button:hover {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+    }
+
+    .trends-list {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .trend-item {
+      display: grid;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0.75rem;
+    }
+
+    .trend-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .trend-item strong {
+      font-size: 0.92rem;
+    }
+
+    .trend-item span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .side-tools {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+    }
+
+    .tool-grid .secondary-button,
+    .tool-grid .danger-button {
+      width: 100%;
+      min-height: 40px;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.84rem;
+    }
+
+    .danger-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--danger);
+      font-weight: 800;
+      padding: 0.55rem 0.85rem;
+    }
+
+    .danger-button:hover {
+      background: color-mix(in srgb, var(--danger) 12%, var(--panel));
+    }
+
+    .status-message {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .connection-form {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.2rem;
+    }
+
+    .connection-form input {
+      width: 100%;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      outline: 0;
+      padding: 0 0.65rem;
+      font-size: 0.84rem;
+    }
+
+    .connection-form input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .field-label {
+      display: grid;
+      gap: 0.25rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .empty-state {
+      display: none;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    .empty-state.visible {
+      display: block;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 220px minmax(0, 1fr);
+      }
+
+      .trends {
+        position: static;
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar-inner,
+      .layout {
+        width: min(100% - 24px, 1180px);
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        overflow-x: auto;
+        padding: 0.75rem;
+      }
+
+      .category-list {
+        grid-auto-flow: column;
+        grid-auto-columns: max-content;
+        overflow-x: auto;
+      }
+
+      .category-button {
+        width: max-content;
+        min-width: 148px;
+      }
+
+      .toolbar,
+      .composer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .composer-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .primary-button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .brand p {
+        display: none;
+      }
+
+      .post {
+        grid-template-columns: 40px minmax(0, 1fr);
+        padding: 0.85rem;
+      }
+
+      .avatar {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand" aria-label="Foro Aurora">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <path d="M8 9h8M8 13h5"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Foro Aurora</h1>
+            <p>Debates, preguntas y respuestas de la comunidad</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar tema">
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.8A8.8 8.8 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar" aria-label="Categorias del foro">
+        <p class="nav-title">Categorias</p>
+        <ul class="category-list" id="categoryList">
+          <li>
+            <button class="category-button active" type="button" data-category="Todo">
+              <span class="category-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+              </span>
+              <span>Todo</span>
+              <span class="badge" data-count="Todo">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="category-button" type="button" data-category="General">
+              <span class="category-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 8h10M7 12h6"></path>
+                  <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-5a8 8 0 1 1 18-6Z"></path>
+                </svg>
+              </span>
+              <span>General</span>
+              <span class="badge" data-count="General">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="category-button" type="button" data-category="Ayuda">
+              <span class="category-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4"></path>
+                  <path d="M12 17h.01"></path>
+                </svg>
+              </span>
+              <span>Ayuda</span>
+              <span class="badge" data-count="Ayuda">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="category-button" type="button" data-category="Ideas">
+              <span class="category-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18h6"></path>
+                  <path d="M10 22h4"></path>
+                  <path d="M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2Z"></path>
+                </svg>
+              </span>
+              <span>Ideas</span>
+              <span class="badge" data-count="Ideas">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="category-button" type="button" data-category="Anuncios">
+              <span class="category-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m3 11 18-5v12L3 13v-2Z"></path>
+                  <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
+                </svg>
+              </span>
+              <span>Anuncios</span>
+              <span class="badge" data-count="Anuncios">0</span>
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <section class="forum-main" aria-label="Publicaciones del foro">
+        <div class="toolbar">
+          <label class="search">
+            <span class="sr-only">Buscar en el foro</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input id="searchInput" type="search" placeholder="Buscar temas, autores o contenido">
+          </label>
+
+          <label>
+            <span class="sr-only">Ordenar publicaciones</span>
+            <select id="sortSelect">
+              <option value="recent">Recientes</option>
+              <option value="popular">Populares</option>
+              <option value="replies">Mas respuestas</option>
+            </select>
+          </label>
+        </div>
+
+        <form class="composer" id="composer">
+          <div class="composer-header">
+            <h2>Crear nuevo tema</h2>
+            <span class="hint">Se publica al instante</span>
+          </div>
+
+          <div class="composer-grid">
+            <label>
+              <span class="sr-only">Tu nombre</span>
+              <input id="authorInput" type="text" maxlength="34" placeholder="Tu nombre">
+            </label>
+            <label>
+              <span class="sr-only">Titulo del tema</span>
+              <input id="titleInput" type="text" maxlength="80" placeholder="Titulo del tema" required>
+            </label>
+            <label>
+              <span class="sr-only">Categoria</span>
+              <select id="categoryInput" required>
+                <option>General</option>
+                <option>Ayuda</option>
+                <option>Ideas</option>
+                <option>Anuncios</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span class="sr-only">Mensaje</span>
+            <textarea id="messageInput" maxlength="420" placeholder="Escribe tu pregunta, idea o anuncio..." required></textarea>
+          </label>
+
+          <div class="composer-actions">
+            <span class="hint" id="charCount">0 / 420</span>
+            <button class="primary-button" type="submit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m22 2-7 20-4-9-9-4Z"></path>
+                <path d="M22 2 11 13"></path>
+              </svg>
+              Publicar
+            </button>
+          </div>
+        </form>
+
+        <div class="feed" id="feed"></div>
+        <div class="empty-state" id="emptyState"></div>
+      </section>
+
+      <aside class="trends" aria-label="Actividad">
+        <p class="section-title">Actividad</p>
+        <ul class="trends-list">
+          <li class="trend-item">
+            <strong id="activityPosts">0 temas</strong>
+            <span>publicados por la comunidad</span>
+          </li>
+          <li class="trend-item">
+            <strong id="activityReplies">0 respuestas</strong>
+            <span>en conversaciones abiertas</span>
+          </li>
+          <li class="trend-item">
+            <strong id="activityCategory">Sin categorias</strong>
+            <span id="activityCategoryInfo">Aun no hay temas</span>
+          </li>
+        </ul>
+        <div class="side-tools">
+          <p class="section-title">Datos</p>
+          <div class="tool-grid">
+            <button class="secondary-button" id="exportButton" type="button">Exportar</button>
+            <button class="secondary-button" id="importButton" type="button">Importar</button>
+          </div>
+          <button class="danger-button" id="clearButton" type="button">Vaciar foro</button>
+          <p class="status-message" id="statusMessage" role="status" aria-live="polite"></p>
+          <input class="file-input" id="importFile" type="file" accept="application/json,.json">
+          <p class="section-title">Conexion</p>
+          <div class="connection-form">
+            <label class="field-label">
+              URL Supabase
+              <input id="supabaseUrlInput" type="url" placeholder="https://tu-proyecto.supabase.co" autocomplete="off">
+            </label>
+            <label class="field-label">
+              Clave publica, no contrasena
+              <input id="supabaseKeyInput" type="password" placeholder="sb_publishable_..." autocomplete="off">
+            </label>
+            <div class="tool-grid">
+              <button class="secondary-button" id="connectButton" type="button">Conectar</button>
+              <button class="secondary-button" id="localModeButton" type="button">Modo local</button>
+            </div>
+            <p class="status-message" id="connectionStatus" role="status" aria-live="polite">Modo local</p>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+const createId = () => {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  return `post-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const localPostStorageKey = "forum-posts";
+const supabaseConfigKey = "forum-supabase-config";
+const likedPostStorageKey = "forum-liked-posts";
+const exportFileName = "foro-aurora-datos.json";
+
+let posts = [];
+let activeCategory = "Todo";
+let activeReplyPostId = null;
+let supabaseClient = null;
+let usingRemote = false;
+let refreshTimer = null;
+let statusTimer = null;
+
+const feed = document.querySelector("#feed");
+const emptyState = document.querySelector("#emptyState");
+const searchInput = document.querySelector("#searchInput");
+const sortSelect = document.querySelector("#sortSelect");
+const categoryButtons = [...document.querySelectorAll(".category-button")];
+const composer = document.querySelector("#composer");
+const authorInput = document.querySelector("#authorInput");
+const titleInput = document.querySelector("#titleInput");
+const categoryInput = document.querySelector("#categoryInput");
+const messageInput = document.querySelector("#messageInput");
+const charCount = document.querySelector("#charCount");
+const themeToggle = document.querySelector("#themeToggle");
+const themeColor = document.querySelector("meta[name='theme-color']");
+const activityPosts = document.querySelector("#activityPosts");
+const activityReplies = document.querySelector("#activityReplies");
+const activityCategory = document.querySelector("#activityCategory");
+const activityCategoryInfo = document.querySelector("#activityCategoryInfo");
+const exportButton = document.querySelector("#exportButton");
+const importButton = document.querySelector("#importButton");
+const importFile = document.querySelector("#importFile");
+const clearButton = document.querySelector("#clearButton");
+const statusMessage = document.querySelector("#statusMessage");
+const supabaseUrlInput = document.querySelector("#supabaseUrlInput");
+const supabaseKeyInput = document.querySelector("#supabaseKeyInput");
+const connectButton = document.querySelector("#connectButton");
+const localModeButton = document.querySelector("#localModeButton");
+const connectionStatus = document.querySelector("#connectionStatus");
+
+function readJson(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "null");
+    return value === null ? fallback : value;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function likedPostIds() {
+  const values = readJson(likedPostStorageKey, []);
+  return new Set(Array.isArray(values) ? values : []);
+}
+
+function saveLikedPostIds(values) {
+  writeJson(likedPostStorageKey, [...values]);
+}
+
+function formatTime(date = new Date()) {
+  try {
+    return new Intl.DateTimeFormat("es-CL", {
+      dateStyle: "short",
+      timeStyle: "short"
+    }).format(date);
+  } catch (error) {
+    return "ahora";
+  }
+}
+
+function formatDbTime(value) {
+  if (!value) return "ahora";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return formatTime(date);
+}
+
+function initialsFor(name) {
+  const letters = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+
+  return letters || "AN";
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[char]));
+}
+
+function normalizePost(post) {
+  const author = post.author || "Anonimo";
+  const likes = Number(post.likes);
+
+  return {
+    id: post.id || createId(),
+    title: post.title || "Tema sin titulo",
+    message: post.message || "",
+    category: post.category || "General",
+    author,
+    initials: post.initials || initialsFor(author),
+    replies: Array.isArray(post.replies) ? post.replies.map(normalizeReply) : [],
+    likes: Number.isFinite(likes) ? Math.max(0, likes) : 0,
+    time: post.time || formatDbTime(post.created_at),
+    liked: Boolean(post.liked)
+  };
+}
+
+function normalizeReply(reply) {
+  const author = reply.author || "Anonimo";
+
+  return {
+    id: reply.id || createId(),
+    author,
+    initials: reply.initials || initialsFor(author),
+    message: reply.message || "",
+    time: reply.time || formatDbTime(reply.created_at)
+  };
+}
+
+function loadLocalPosts() {
+  const savedPosts = readJson(localPostStorageKey, []);
+  return Array.isArray(savedPosts) ? savedPosts.map(normalizePost) : [];
+}
+
+function saveLocalPosts() {
+  writeJson(localPostStorageKey, posts);
+}
+
+function getSupabaseConfig() {
+  const saved = readJson(supabaseConfigKey, {});
+  return {
+    url: normalizeSupabaseUrl(saved.url || ""),
+    key: String(saved.key || "").trim()
+  };
+}
+
+function normalizeSupabaseUrl(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\/rest\/v1\/?$/i, "")
+    .replace(/\/+$/g, "");
+}
+
+function saveSupabaseConfig() {
+  const config = {
+    url: normalizeSupabaseUrl(supabaseUrlInput.value),
+    key: supabaseKeyInput.value.trim()
+  };
+
+  if (!config.url || !config.key) {
+    showStatus("Falta la URL o la clave publica. No uses la contrasena.");
+    return null;
+  }
+
+  supabaseUrlInput.value = config.url;
+  writeJson(supabaseConfigKey, config);
+  return config;
+}
+
+function fillSupabaseInputs() {
+  const config = getSupabaseConfig();
+  supabaseUrlInput.value = config.url;
+  supabaseKeyInput.value = config.key;
+}
+
+function setConnectionStatus(message) {
+  connectionStatus.textContent = message;
+}
+
+function showStatus(message) {
+  window.clearTimeout(statusTimer);
+  statusMessage.textContent = message;
+  statusTimer = window.setTimeout(() => {
+    statusMessage.textContent = "";
+  }, 4200);
+}
+
+function setTheme(isDark) {
+  document.body.classList.toggle("dark", isDark);
+  localStorage.setItem("forum-theme", isDark ? "dark" : "light");
+  themeToggle.setAttribute("aria-label", isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+  if (themeColor) themeColor.setAttribute("content", isDark ? "#0e1117" : "#ffffff");
+}
+
+function visiblePosts() {
+  const query = searchInput.value.trim().toLowerCase();
+  const sorted = [...posts].sort((a, b) => {
+    if (sortSelect.value === "popular") return b.likes - a.likes;
+    if (sortSelect.value === "replies") return b.replies.length - a.replies.length;
+    return 0;
+  });
+
+  return sorted.filter((post) => {
+    const matchesCategory = activeCategory === "Todo" || post.category === activeCategory;
+    const replyText = post.replies.map((reply) => `${reply.author} ${reply.message}`).join(" ");
+    const searchable = `${post.title} ${post.message} ${post.author} ${post.category} ${replyText}`.toLowerCase();
+    return matchesCategory && searchable.includes(query);
+  });
+}
+
+function updateCounts() {
+  const counts = posts.reduce((acc, post) => {
+    acc[post.category] = (acc[post.category] || 0) + 1;
+    acc.Todo += 1;
+    return acc;
+  }, { Todo: 0, General: 0, Ayuda: 0, Ideas: 0, Anuncios: 0 });
+
+  document.querySelectorAll("[data-count]").forEach((item) => {
+    item.textContent = counts[item.dataset.count] ?? 0;
+  });
+
+  const totalReplies = posts.reduce((sum, post) => sum + post.replies.length, 0);
+  const topCategory = Object.entries(counts)
+    .filter(([category]) => category !== "Todo")
+    .sort((a, b) => b[1] - a[1])
+    .find(([, count]) => count > 0);
+
+  activityPosts.textContent = `${posts.length} ${posts.length === 1 ? "tema" : "temas"}`;
+  activityReplies.textContent = `${totalReplies} ${totalReplies === 1 ? "respuesta" : "respuestas"}`;
+  activityCategory.textContent = topCategory ? `#${topCategory[0].toLowerCase()}` : "Sin categorias";
+  activityCategoryInfo.textContent = topCategory
+    ? `${topCategory[1]} ${topCategory[1] === 1 ? "tema publicado" : "temas publicados"}`
+    : "Aun no hay temas";
+}
+
+function updateEmptyState(items) {
+  if (posts.length === 0) {
+    emptyState.textContent = usingRemote
+      ? "La base compartida esta vacia. Crea el primer tema."
+      : "Todavia no hay temas. Crea el primero para iniciar el foro.";
+  } else {
+    emptyState.textContent = "No hay temas que coincidan con tu busqueda.";
+  }
+
+  emptyState.classList.toggle("visible", items.length === 0);
+}
+
+function renderReplies(post) {
+  if (post.replies.length === 0) return "";
+
+  return `
+    <div class="replies" aria-label="Respuestas">
+      ${post.replies.map((reply) => `
+        <div class="reply">
+          <div class="reply-avatar" aria-hidden="true">${escapeHtml(reply.initials)}</div>
+          <div class="reply-content">
+            <div class="reply-meta">
+              <strong>${escapeHtml(reply.author)}</strong>
+              <span>${escapeHtml(reply.time)}</span>
+            </div>
+            <p>${escapeHtml(reply.message)}</p>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderReplyForm(post) {
+  if (activeReplyPostId !== post.id) return "";
+
+  return `
+    <form class="reply-form" data-reply-form="${post.id}">
+      <label>
+        <span class="sr-only">Tu nombre para responder</span>
+        <input name="replyAuthor" type="text" maxlength="34" placeholder="Tu nombre">
+      </label>
+      <label>
+        <span class="sr-only">Respuesta</span>
+        <textarea name="replyMessage" maxlength="300" placeholder="Escribe tu respuesta..." data-reply-text="${post.id}" required></textarea>
+      </label>
+      <div class="reply-form-actions">
+        <button class="secondary-button" type="button" data-cancel-reply="${post.id}">Cancelar</button>
+        <button class="primary-button" type="submit">Enviar respuesta</button>
+      </div>
+    </form>
+  `;
+}
+
+function renderPosts() {
+  const items = visiblePosts();
+  feed.innerHTML = items.map((post) => `
+    <article class="post">
+      <div class="avatar" aria-hidden="true">${escapeHtml(post.initials)}</div>
+      <div class="post-body">
+        <div class="post-meta">
+          <strong>${escapeHtml(post.author)}</strong>
+          <span>${escapeHtml(post.time)}</span>
+          <span class="tag">${escapeHtml(post.category)}</span>
+        </div>
+        <h3>${escapeHtml(post.title)}</h3>
+        <p>${escapeHtml(post.message)}</p>
+        <div class="post-actions">
+          <button class="icon-button ${post.liked ? "active" : ""}" type="button" data-like="${post.id}" aria-label="Dar me gusta">
+            <svg viewBox="0 0 24 24" fill="${post.liked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"></path>
+            </svg>
+            ${post.likes}
+          </button>
+          <button class="icon-button ${activeReplyPostId === post.id ? "active" : ""}" type="button" data-reply="${post.id}" aria-label="Responder" aria-expanded="${activeReplyPostId === post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            ${post.replies.length}
+          </button>
+        </div>
+        ${renderReplies(post)}
+        ${renderReplyForm(post)}
+      </div>
+    </article>
+  `).join("");
+
+  updateEmptyState(items);
+  updateCounts();
+}
+
+function makePostRow(post) {
+  return {
+    title: post.title,
+    message: post.message,
+    category: post.category,
+    author: post.author,
+    initials: post.initials,
+    likes: post.likes
+  };
+}
+
+function makeReplyRow(reply, postId) {
+  return {
+    post_id: postId,
+    message: reply.message,
+    author: reply.author,
+    initials: reply.initials
+  };
+}
+
+async function loadRemotePosts() {
+  if (!supabaseClient) return;
+
+  const liked = likedPostIds();
+  const { data: postRows, error: postError } = await supabaseClient
+    .from("forum_posts")
+    .select("id,title,message,category,author,initials,likes,created_at")
+    .order("created_at", { ascending: false });
+
+  if (postError) throw postError;
+
+  const ids = (postRows || []).map((post) => post.id);
+  const repliesByPost = new Map(ids.map((id) => [id, []]));
+
+  if (ids.length > 0) {
+    const { data: replyRows, error: replyError } = await supabaseClient
+      .from("forum_replies")
+      .select("id,post_id,message,author,initials,created_at")
+      .in("post_id", ids)
+      .order("created_at", { ascending: true });
+
+    if (replyError) throw replyError;
+
+    (replyRows || []).forEach((reply) => {
+      const replies = repliesByPost.get(reply.post_id) || [];
+      replies.push(normalizeReply(reply));
+      repliesByPost.set(reply.post_id, replies);
+    });
+  }
+
+  posts = (postRows || []).map((post) => normalizePost({
+    ...post,
+    time: formatDbTime(post.created_at),
+    liked: liked.has(post.id),
+    replies: repliesByPost.get(post.id) || []
+  }));
+
+  renderPosts();
+}
+
+function stopRemoteRefresh() {
+  if (refreshTimer) window.clearInterval(refreshTimer);
+  refreshTimer = null;
+}
+
+function startRemoteRefresh() {
+  stopRemoteRefresh();
+  refreshTimer = window.setInterval(() => {
+    const activeElement = document.activeElement;
+    if (activeElement && activeElement.closest("#composer, .reply-form")) return;
+    loadRemotePosts().catch(() => {
+      setConnectionStatus("Conexion compartida con problemas.");
+    });
+  }, 15000);
+}
+
+async function connectRemote(config, options = {}) {
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    usingRemote = false;
+    setConnectionStatus("Supabase no cargo. Revisa internet.");
+    showStatus("No se pudo cargar Supabase.");
+    return false;
+  }
+
+  try {
+    setConnectionStatus("Conectando...");
+    supabaseClient = window.supabase.createClient(config.url, config.key);
+    usingRemote = true;
+    await loadRemotePosts();
+    startRemoteRefresh();
+    setConnectionStatus("Base compartida activa.");
+    if (options.showStatus) showStatus("Conectado a base compartida.");
+    return true;
+  } catch (error) {
+    usingRemote = false;
+    supabaseClient = null;
+    stopRemoteRefresh();
+    posts = loadLocalPosts();
+    renderPosts();
+    setConnectionStatus("Modo local.");
+    showStatus("No se pudo conectar. Revisa URL, clave y tablas.");
+    return false;
+  }
+}
+
+async function bootRemoteIfConfigured() {
+  const config = getSupabaseConfig();
+  if (!config.url || !config.key) {
+    setConnectionStatus("Modo local.");
+    return;
+  }
+
+  await connectRemote(config);
+}
+
+function switchToLocalMode() {
+  localStorage.removeItem(supabaseConfigKey);
+  usingRemote = false;
+  supabaseClient = null;
+  stopRemoteRefresh();
+  posts = loadLocalPosts();
+  activeReplyPostId = null;
+  fillSupabaseInputs();
+  renderPosts();
+  setConnectionStatus("Modo local.");
+  showStatus("Volviste al modo local.");
+}
+
+async function createPost(post) {
+  if (usingRemote && supabaseClient) {
+    const { error } = await supabaseClient.from("forum_posts").insert(makePostRow(post));
+    if (error) throw error;
+    await loadRemotePosts();
+    showStatus("Tema publicado en la base compartida.");
+    return;
+  }
+
+  posts.unshift(post);
+  saveLocalPosts();
+  renderPosts();
+}
+
+async function createReply(postId, reply) {
+  if (usingRemote && supabaseClient) {
+    const { error } = await supabaseClient.from("forum_replies").insert(makeReplyRow(reply, postId));
+    if (error) throw error;
+    await loadRemotePosts();
+    showStatus("Respuesta publicada en la base compartida.");
+    return;
+  }
+
+  const post = posts.find((item) => item.id === postId);
+  if (!post) return;
+  post.replies.push(reply);
+  saveLocalPosts();
+  renderPosts();
+}
+
+async function toggleLike(postId) {
+  const post = posts.find((item) => item.id === postId);
+  if (!post) return;
+
+  const liked = likedPostIds();
+  const nextLiked = !post.liked;
+  const delta = nextLiked ? 1 : -1;
+
+  post.liked = nextLiked;
+  post.likes = Math.max(0, post.likes + delta);
+  if (nextLiked) liked.add(postId);
+  else liked.delete(postId);
+  saveLikedPostIds(liked);
+  renderPosts();
+
+  if (usingRemote && supabaseClient) {
+    const { error } = await supabaseClient.rpc("forum_change_like", {
+      target_post_id: postId,
+      like_delta: delta
+    });
+
+    if (error) {
+      post.liked = !nextLiked;
+      post.likes = Math.max(0, post.likes - delta);
+      if (nextLiked) liked.delete(postId);
+      else liked.add(postId);
+      saveLikedPostIds(liked);
+      renderPosts();
+      showStatus("No se pudo guardar el like. Revisa el SQL de Supabase.");
+      return;
+    }
+
+    await loadRemotePosts();
+    return;
+  }
+
+  saveLocalPosts();
+}
+
+function exportData() {
+  const payload = {
+    app: "Foro Aurora",
+    version: 2,
+    mode: usingRemote ? "supabase" : "local",
+    exportedAt: new Date().toISOString(),
+    posts
+  };
+  const file = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = exportFileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showStatus("Datos exportados.");
+}
+
+function mergeLocalPosts(importedPosts) {
+  const existingIds = new Set(posts.map((post) => post.id));
+  const normalizedPosts = importedPosts.map(normalizePost);
+  let added = 0;
+
+  normalizedPosts.forEach((post) => {
+    if (!existingIds.has(post.id)) {
+      posts.push(post);
+      existingIds.add(post.id);
+      added += 1;
+    }
+  });
+
+  saveLocalPosts();
+  renderPosts();
+  showStatus(`${added} ${added === 1 ? "tema importado" : "temas importados"}.`);
+}
+
+async function importRemotePosts(importedPosts) {
+  const normalizedPosts = importedPosts.map(normalizePost);
+  let added = 0;
+
+  for (const post of normalizedPosts) {
+    const { data, error } = await supabaseClient
+      .from("forum_posts")
+      .insert(makePostRow(post))
+      .select("id")
+      .single();
+
+    if (error) throw error;
+
+    if (post.replies.length > 0) {
+      const replyRows = post.replies.map((reply) => makeReplyRow(reply, data.id));
+      const { error: replyError } = await supabaseClient.from("forum_replies").insert(replyRows);
+      if (replyError) throw replyError;
+    }
+
+    added += 1;
+  }
+
+  await loadRemotePosts();
+  showStatus(`${added} ${added === 1 ? "tema importado" : "temas importados"} a la base compartida.`);
+}
+
+function importData(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.addEventListener("load", async () => {
+    try {
+      const data = JSON.parse(String(reader.result || "{}"));
+      const importedPosts = Array.isArray(data) ? data : data.posts;
+
+      if (!Array.isArray(importedPosts)) {
+        showStatus("Archivo no compatible.");
+        return;
+      }
+
+      if (usingRemote && supabaseClient) {
+        await importRemotePosts(importedPosts);
+      } else {
+        mergeLocalPosts(importedPosts);
+      }
+    } catch (error) {
+      showStatus("No se pudo importar el archivo.");
+    }
+  });
+  reader.readAsText(file);
+}
+
+function bindEvents() {
+  categoryButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeCategory = button.dataset.category;
+      categoryButtons.forEach((item) => item.classList.toggle("active", item === button));
+      renderPosts();
+    });
+  });
+
+  searchInput.addEventListener("input", renderPosts);
+  sortSelect.addEventListener("change", renderPosts);
+
+  messageInput.addEventListener("input", () => {
+    charCount.textContent = `${messageInput.value.length} / 420`;
+  });
+
+  composer.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const author = authorInput.value.trim() || "Anonimo";
+    const title = titleInput.value.trim();
+    const message = messageInput.value.trim();
+    if (!title || !message) return;
+
+    const post = {
+      id: createId(),
+      title,
+      message,
+      category: categoryInput.value,
+      author,
+      initials: initialsFor(author),
+      replies: [],
+      likes: 0,
+      time: formatTime(),
+      liked: false
+    };
+
+    try {
+      await createPost(post);
+      composer.reset();
+      charCount.textContent = "0 / 420";
+    } catch (error) {
+      showStatus("No se pudo publicar el tema.");
+    }
+  });
+
+  feed.addEventListener("click", (event) => {
+    const likeButton = event.target.closest("[data-like]");
+    const replyButton = event.target.closest("[data-reply]");
+    const cancelReplyButton = event.target.closest("[data-cancel-reply]");
+
+    if (likeButton) {
+      toggleLike(likeButton.dataset.like);
+    }
+
+    if (replyButton) {
+      activeReplyPostId = activeReplyPostId === replyButton.dataset.reply ? null : replyButton.dataset.reply;
+      renderPosts();
+      const replyText = document.querySelector(`[data-reply-text="${activeReplyPostId}"]`);
+      if (replyText) replyText.focus();
+    }
+
+    if (cancelReplyButton) {
+      activeReplyPostId = null;
+      renderPosts();
+    }
+  });
+
+  feed.addEventListener("submit", async (event) => {
+    const replyForm = event.target.closest("[data-reply-form]");
+    if (!replyForm) return;
+
+    event.preventDefault();
+    const replyAuthorInput = replyForm.elements.replyAuthor;
+    const replyMessageInput = replyForm.elements.replyMessage;
+    const author = replyAuthorInput.value.trim() || "Anonimo";
+    const message = replyMessageInput.value.trim();
+    if (!message) return;
+
+    const reply = {
+      id: createId(),
+      author,
+      initials: initialsFor(author),
+      message,
+      time: formatTime()
+    };
+
+    try {
+      await createReply(replyForm.dataset.replyForm, reply);
+      activeReplyPostId = null;
+      renderPosts();
+    } catch (error) {
+      showStatus("No se pudo publicar la respuesta.");
+    }
+  });
+
+  themeToggle.addEventListener("click", () => {
+    setTheme(!document.body.classList.contains("dark"));
+  });
+
+  exportButton.addEventListener("click", exportData);
+
+  importButton.addEventListener("click", () => {
+    importFile.click();
+  });
+
+  importFile.addEventListener("change", () => {
+    importData(importFile.files[0]);
+    importFile.value = "";
+  });
+
+  clearButton.addEventListener("click", () => {
+    if (usingRemote) {
+      showStatus("Por seguridad, no se vacia la base compartida desde la pagina.");
+      return;
+    }
+
+    const shouldClear = window.confirm("Seguro que quieres vaciar el foro en este navegador?");
+    if (!shouldClear) return;
+
+    posts.length = 0;
+    activeReplyPostId = null;
+    saveLocalPosts();
+    renderPosts();
+    showStatus("Foro local vaciado.");
+  });
+
+  connectButton.addEventListener("click", async () => {
+    const config = saveSupabaseConfig();
+    if (!config) return;
+    await connectRemote(config, { showStatus: true });
+  });
+
+  localModeButton.addEventListener("click", switchToLocalMode);
+}
+
+function boot() {
+  fillSupabaseInputs();
+  setTheme(localStorage.getItem("forum-theme") === "dark");
+  posts = loadLocalPosts();
+  renderPosts();
+  bindEvents();
+  bootRemoteIfConfigured();
+}
+
+boot();
+
+  </script>
+</body>
+</html>
