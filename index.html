@@ -1078,6 +1078,10 @@ const authHint = document.querySelector("#authHint");
 function installEnhancedUi() {
   const style = document.createElement("style");
   style.textContent = `
+    [hidden] {
+      display: none !important;
+    }
+
     .account-panel {
       display: grid;
       gap: 0.75rem;
@@ -1589,6 +1593,37 @@ function showStatus(message) {
   }, 5000);
 }
 
+function withTimeout(promise, ms, message) {
+  let timer = null;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => {
+      reject(new Error(message || "La conexión tardó demasiado."));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) window.clearTimeout(timer);
+  });
+}
+
+function authErrorMessage(error) {
+  const message = String(error?.message || "").toLowerCase();
+
+  if (message.includes("email not confirmed") || message.includes("confirm")) {
+    return "Tu correo aún no está confirmado. Revisa tu email o desactiva Confirm email en Supabase para probar.";
+  }
+
+  if (message.includes("invalid login") || message.includes("invalid credentials")) {
+    return "Correo o contraseña incorrectos.";
+  }
+
+  if (message.includes("fetch") || message.includes("network") || message.includes("timeout")) {
+    return "No se pudo conectar con Supabase. Revisa internet, URL y clave pública.";
+  }
+
+  return "No se pudo entrar. Revisa correo, contraseña y confirmación de email.";
+}
+
 function setTheme(isDark) {
   document.body.classList.toggle("dark", isDark);
   localStorage.setItem("forum-theme", isDark ? "dark" : "light");
@@ -1879,7 +1914,7 @@ function startRemoteRefresh() {
   refreshTimer = window.setInterval(() => {
     const activeElement = document.activeElement;
     if (activeElement && activeElement.closest("#composer, .reply-form, #authModal, #profileForm")) return;
-    loadRemotePosts().catch(() => {
+    withTimeout(loadRemotePosts(), 9000, "No se pudieron actualizar los temas.").catch(() => {
       setConnectionStatus("Conexión compartida con problemas.");
     });
   }, 15000);
@@ -1967,7 +2002,12 @@ async function syncAuthState() {
     return;
   }
 
-  const { data, error } = await supabaseClient.auth.getSession();
+  const { data, error } = await withTimeout(
+    supabaseClient.auth.getSession(),
+    7000,
+    "No se pudo revisar la sesión."
+  );
+
   if (error) {
     currentUser = null;
     currentProfile = null;
@@ -1976,7 +2016,18 @@ async function syncAuthState() {
   }
 
   currentUser = data.session?.user || null;
-  if (currentUser) await loadCurrentProfile();
+  if (currentUser) {
+    await withTimeout(
+      loadCurrentProfile(),
+      7000,
+      "No se pudo cargar el perfil."
+    ).catch(() => {
+      currentProfile = {
+        username: fallbackUsername(currentUser),
+        avatarColor: avatarColorFor(currentUser.id || currentUser.email)
+      };
+    });
+  }
   renderAuthState();
 }
 
@@ -2030,18 +2081,49 @@ async function connectRemote(config, options = {}) {
     });
     usingRemote = true;
     subscribeToAuth();
-    await syncAuthState();
-    await loadRemotePosts();
+    setConnectionStatus("Conexión lista. Revisando sesión...");
+    await withTimeout(
+      syncAuthState(),
+      9000,
+      "No se pudo revisar la sesión."
+    ).catch(() => {
+      currentUser = null;
+      currentProfile = null;
+      renderAuthState();
+    });
+
+    setConnectionStatus(currentUser ? "Cuenta conectada. Cargando temas..." : "Base conectada. Inicia sesión.");
+
+    await withTimeout(
+      loadRemotePosts(),
+      10000,
+      "No se pudieron cargar los temas."
+    ).catch(() => {
+      renderPosts();
+      setConnectionStatus(currentUser
+        ? "Cuenta conectada. No se pudieron cargar los temas."
+        : "Base conectada. No se pudieron cargar los temas.");
+      showStatus("Si sigue pasando, ejecuta el SQL actualizado en Supabase.");
+    });
+
     startRemoteRefresh();
-    setConnectionStatus(currentUser ? "Base compartida activa. Cuenta conectada." : "Base compartida activa.");
+    if (connectionStatus.textContent.includes("Cargando") || connectionStatus.textContent.includes("Inicia sesión")) {
+      setConnectionStatus(currentUser ? "Base compartida activa. Cuenta conectada." : "Base compartida activa. Inicia sesión.");
+    }
     if (options.showStatus) showStatus("Conectado a base compartida.");
     return true;
   } catch (error) {
     usingRemote = Boolean(supabaseClient);
     posts = loadLocalPosts();
     renderPosts();
-    setConnectionStatus("Conexión creada, pero falta revisar el SQL.");
-    showStatus("Ejecuta el SQL actualizado en Supabase y recarga.");
+    if (usingRemote) {
+      setConnectionStatus("Base conectada, pero hay un problema cargando datos.");
+      showStatus("Puedes intentar entrar. Si falla, revisa la clave y el SQL.");
+      return true;
+    }
+
+    setConnectionStatus("No se pudo conectar con Supabase.");
+    showStatus("Revisa URL, clave pública e internet.");
     return false;
   }
 }
@@ -2355,17 +2437,31 @@ async function handleSignIn() {
     return;
   }
 
+  let result = null;
   authSignInButton.disabled = true;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  authSignInButton.disabled = false;
+  authSignInButton.textContent = "Entrando...";
 
-  if (error) {
-    showStatus("No se pudo entrar. Revisa correo o contraseña.");
+  try {
+    result = await withTimeout(
+      supabaseClient.auth.signInWithPassword({ email, password }),
+      12000,
+      "La entrada tardó demasiado."
+    );
+  } catch (error) {
+    showStatus(authErrorMessage(error));
+    return;
+  } finally {
+    authSignInButton.disabled = false;
+    authSignInButton.textContent = "Entrar";
+  }
+
+  if (result?.error) {
+    showStatus(authErrorMessage(result.error));
     return;
   }
 
-  await syncAuthState();
-  await loadRemotePosts().catch(() => {});
+  await withTimeout(syncAuthState(), 8000, "No se pudo actualizar la sesión.").catch(() => {});
+  await withTimeout(loadRemotePosts(), 9000, "No se pudieron cargar los temas.").catch(() => {});
   closeAuthModal();
   showStatus("Sesión iniciada.");
 }
@@ -2389,32 +2485,57 @@ async function handleSignUp() {
   }
 
   authSignUpButton.disabled = true;
+  authSignUpButton.textContent = "Creando...";
   writeJson(pendingProfileKey, { username });
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        username,
-        display_name: username
-      }
-    }
-  });
-  authSignUpButton.disabled = false;
+
+  let result = null;
+  try {
+    result = await withTimeout(
+      supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            display_name: username
+          }
+        }
+      }),
+      12000,
+      "La creación de cuenta tardó demasiado."
+    );
+  } catch (error) {
+    showStatus(authErrorMessage(error));
+    return;
+  } finally {
+    authSignUpButton.disabled = false;
+    authSignUpButton.textContent = "Crear cuenta";
+  }
+
+  const { data, error } = result || {};
 
   if (error) {
-    showStatus("No se pudo crear la cuenta. Prueba otro correo o nombre.");
+    const message = String(error.message || "").toLowerCase();
+    if (message.includes("already") || message.includes("registered") || message.includes("exists")) {
+      showStatus("Esa cuenta ya existe. Usa el botón Entrar.");
+    } else {
+      showStatus("No se pudo crear la cuenta. Prueba otro correo o nombre.");
+    }
     return;
   }
 
-  if (!data.session) {
-    showStatus("Cuenta creada. Revisa tu correo para confirmar y luego entra.");
+  if (!data?.session) {
+    showStatus("Cuenta creada. Revisa tu correo para confirmar y luego usa Entrar.");
     return;
   }
 
   currentUser = data.session.user;
-  await saveProfile(username, avatarColorFor(currentUser.id || username), { quiet: true });
-  await syncAuthState();
+  await withTimeout(
+    saveProfile(username, avatarColorFor(currentUser.id || username), { quiet: true }),
+    8000,
+    "No se pudo guardar el perfil."
+  ).catch(() => {});
+  await withTimeout(syncAuthState(), 8000, "No se pudo actualizar la sesión.").catch(() => {});
   closeAuthModal();
   showStatus("Cuenta creada y conectada.");
 }
